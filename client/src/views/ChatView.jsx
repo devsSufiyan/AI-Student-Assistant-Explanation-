@@ -9,9 +9,19 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { api } from '../api.js';
-import { Card } from '../components/ui.jsx';
+import { Card, EmptyState } from '../components/ui.jsx';
+import { useToast } from '../components/Toast.jsx';
+
+// A few starter questions make the empty chat less intimidating than a blank box.
+const SUGGESTIONS = [
+  'Summarise the key ideas in my notes',
+  'What is a B-tree and why is it used?',
+  'Explain the ACID properties',
+  'What is the difference between a clustered and non-clustered index?',
+];
 
 export default function ChatView({ subject }) {
+  const toast = useToast();
   const [messages, setMessages] = useState([]);
   const [question, setQuestion] = useState('');
   const [busy, setBusy] = useState(false);
@@ -28,11 +38,11 @@ export default function ChatView({ subject }) {
   // Keep the newest message in view.
   useEffect(() => {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, busy]);
 
-  const ask = async (e) => {
-    e.preventDefault();
-    const q = question.trim();
+  const ask = async (e, preset) => {
+    e?.preventDefault();
+    const q = (preset ?? question).trim();
     if (!q || busy) return;
 
     setMessages((m) => [...m, { role: 'user', text: q }]);
@@ -48,6 +58,7 @@ export default function ChatView({ subject }) {
       setMessages((m) => [...m, { role: 'assistant', ...res }]);
     } catch (err) {
       setError(err.message);
+      toast.error(err.message);
     } finally {
       setBusy(false);
     }
@@ -55,12 +66,13 @@ export default function ChatView({ subject }) {
 
   return (
     <Card title={`Ask about ${subject?.name ?? 'your material'}`}>
-      <div className="chat-log" ref={logRef} style={{ maxHeight: 460, overflowY: 'auto' }}>
+      <div className="chat-log" ref={logRef} style={{ maxHeight: 440, overflowY: 'auto' }}>
         {messages.length === 0 && (
-          <p className="muted">
-            Ask a question and the assistant will answer using only your uploaded
-            material, citing the exact sources it used.
-          </p>
+          <EmptyState
+            icon="💬"
+            title="Ask anything from your notes"
+            hint="Answers are built only from your uploaded material, with the exact sources cited."
+          />
         )}
 
         {messages.map((m, i) =>
@@ -70,35 +82,59 @@ export default function ChatView({ subject }) {
             <div key={i} className={`bubble assistant ${m.refused ? 'refused' : ''}`}>
               <div>{m.answer}</div>
               {m.citations?.length > 0 && (
-                <div style={{ marginTop: 8 }}>
-                  <div className="small muted">Sources:</div>
+                <div style={{ marginTop: 10 }}>
+                  <div className="small muted" style={{ marginBottom: 4 }}>
+                    Sources ({m.citations.length})
+                  </div>
                   {m.citations.map((c, j) => (
                     <div key={j} className="citation">
-                      <div className="small">“{c.quote}”</div>
-                      <div className="small muted">
-                        score {c.score} {c.page ? `· page ${c.page}` : ''} · chunk {c.chunkId.slice(0, 8)}
+                      <div>“{c.quote}”</div>
+                      <div className="small muted" style={{ marginTop: 3 }}>
+                        match {c.score}{c.page ? ` · page ${c.page}` : ''} · chunk {c.chunkId.slice(0, 8)}
                       </div>
                     </div>
                   ))}
                 </div>
               )}
-              {m.refused && <div className="small muted" style={{ marginTop: 6 }}>No grounded answer was found.</div>}
+              {m.refused && (
+                <div className="small muted" style={{ marginTop: 6 }}>
+                  Nothing in your material covered this, so no answer was invented.
+                </div>
+              )}
             </div>
           ),
         )}
-        {busy && <div className="bubble assistant muted">Thinking…</div>}
+
+        {busy && (
+          <div className="bubble assistant">
+            <span className="typing"><i /><i /><i /></span>
+          </div>
+        )}
       </div>
+
+      {messages.length === 0 && (
+        <div className="chips" style={{ marginBottom: 14 }}>
+          {SUGGESTIONS.map((s) => (
+            <button key={s} className="chip" style={{ cursor: 'pointer', border: 'none' }} onClick={(e) => ask(e, s)}>
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
 
       {error && <div className="error">{error}</div>}
 
-      <form className="row" onSubmit={ask}>
+      <form className="row" onSubmit={(e) => ask(e)}>
         <input
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
           placeholder="e.g. What is a B-tree and why is it used?"
           disabled={busy}
+          aria-label="Your question"
         />
-        <button className="primary" type="submit" disabled={busy || !question.trim()}>Ask</button>
+        <button className="primary" type="submit" disabled={busy || !question.trim()}>
+          Ask
+        </button>
       </form>
     </Card>
   );

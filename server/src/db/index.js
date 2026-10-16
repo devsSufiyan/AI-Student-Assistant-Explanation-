@@ -39,8 +39,21 @@ export const db = new DatabaseSync(dbFile);
 
 // Foreign keys are OFF by default in SQLite; turn them on before anything else.
 db.exec('PRAGMA foreign_keys = ON;');
-// WAL gives better read concurrency for the dev server without extra setup.
-db.exec('PRAGMA journal_mode = WAL;');
+
+// Wait (up to 5s) for a lock instead of throwing immediately. Without this, a
+// second process touching the file - a dev-server restart, a concurrent test,
+// the seed script - crashes the server with "database is locked" on boot.
+db.exec('PRAGMA busy_timeout = 5000;');
+
+// WAL improves read concurrency. It needs a brief exclusive lock to switch
+// modes, so it is treated as an OPTIMISATION, not a requirement: if another
+// process holds the database right now we keep the default journal mode and
+// carry on rather than refusing to start.
+try {
+  db.exec('PRAGMA journal_mode = WAL;');
+} catch (err) {
+  console.warn('[db] could not enable WAL mode, continuing with the default journal:', err.message);
+}
 
 /** Apply the schema. Safe to run on every boot (all statements are idempotent). */
 export function migrate() {

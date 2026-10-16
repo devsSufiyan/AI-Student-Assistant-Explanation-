@@ -9,11 +9,11 @@
 import React from 'react';
 
 /** A titled surface. */
-export function Card({ title, children, right }) {
+export function Card({ title, children, right, className = '' }) {
   return (
-    <div className="card">
+    <div className={`card ${className}`}>
       {(title || right) && (
-        <div className="row" style={{ marginBottom: 12 }}>
+        <div className="row" style={{ marginBottom: 14 }}>
           {title && <h2 style={{ margin: 0 }}>{title}</h2>}
           <div className="spacer" />
           {right}
@@ -24,53 +24,80 @@ export function Card({ title, children, right }) {
   );
 }
 
-/** Big-number stat used on the dashboard. */
+/** Headline metric card. */
 export function Stat({ label, value, hint }) {
   return (
-    <div className="card" style={{ marginBottom: 0 }}>
+    <div className="stat">
       <div className="stat-value">{value}</div>
       <div className="stat-label">{label}</div>
-      {hint && <div className="small muted" style={{ marginTop: 4 }}>{hint}</div>}
+      {hint && <div className="stat-hint">{hint}</div>}
     </div>
   );
 }
 
 /**
- * A horizontal progress bar.
- * @param {number} value  0..1
- * @param {string} tone   '', 'success', 'warning', 'danger'
+ * Horizontal progress bar.
+ * @param {number} value 0..1
+ * @param {string} tone '', 'success', 'warning', 'danger'
  */
-export function Bar({ value, tone = '' }) {
+export function Bar({ value, tone = '', thin = false }) {
   const pct = Math.round(Math.max(0, Math.min(1, value)) * 100);
   return (
-    <div className={`bar ${tone}`}>
+    <div className={`bar ${tone} ${thin ? 'thin' : ''}`}>
       <span style={{ width: `${pct}%` }} />
     </div>
   );
 }
 
-/** Colour-coded mastery label. */
+/** Colour-coded mastery chip. */
 export function MasteryBadge({ label }) {
-  const tone =
-    label === 'mastered' ? 'green' : label === 'proficient' ? 'green' : label === 'developing' ? 'amber' : 'red';
+  const tone = ['mastered', 'proficient'].includes(label)
+    ? 'green'
+    : label === 'developing'
+      ? 'amber'
+      : 'red';
   return <span className={`badge ${tone}`}>{label}</span>;
 }
 
-/** Simple SVG line chart for the accuracy trend (avoids a chart dependency). */
-export function Sparkline({ points, height = 60 }) {
+/** Consistent empty state so blank panels still look intentional. */
+export function EmptyState({ icon = '📭', title, hint }) {
+  return (
+    <div className="empty">
+      <div className="empty-ico">{icon}</div>
+      <div className="empty-title">{title}</div>
+      {hint && <div className="small" style={{ marginTop: 4 }}>{hint}</div>}
+    </div>
+  );
+}
+
+/** Simple SVG line chart for the accuracy trend (no chart dependency). */
+export function Sparkline({ points, height = 68 }) {
   if (!points || points.length === 0) {
     return <div className="muted small">No attempts yet.</div>;
   }
+
   const width = 320;
-  const max = 1;
-  const step = points.length > 1 ? width / (points.length - 1) : width;
-  const coords = points.map((p, i) => [i * step, height - (p.accuracy / max) * height]);
-  const path = coords.map((c, i) => `${i === 0 ? 'M' : 'L'}${c[0].toFixed(1)},${c[1].toFixed(1)}`).join(' ');
+  const pad = 6;
+  const step = points.length > 1 ? (width - pad * 2) / (points.length - 1) : 0;
+  const coords = points.map((p, i) => [
+    pad + i * step,
+    height - pad - p.accuracy * (height - pad * 2),
+  ]);
+  const line = coords.map((c, i) => `${i === 0 ? 'M' : 'L'}${c[0].toFixed(1)},${c[1].toFixed(1)}`).join(' ');
+  const area = `${line} L${coords.at(-1)[0].toFixed(1)},${height - pad} L${coords[0][0].toFixed(1)},${height - pad} Z`;
+
   return (
     <svg viewBox={`0 0 ${width} ${height}`} width="100%" height={height} preserveAspectRatio="none">
-      <path d={path} fill="none" stroke="var(--primary)" strokeWidth="2" />
+      <defs>
+        <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="rgba(99,102,241,0.35)" />
+          <stop offset="100%" stopColor="rgba(99,102,241,0)" />
+        </linearGradient>
+      </defs>
+      <path d={area} fill="url(#sparkFill)" />
+      <path d={line} fill="none" stroke="var(--brand-1)" strokeWidth="2.5" strokeLinejoin="round" />
       {coords.map((c, i) => (
-        <circle key={i} cx={c[0]} cy={c[1]} r="2.5" fill="var(--primary)" />
+        <circle key={i} cx={c[0]} cy={c[1]} r="3" fill="#fff" stroke="var(--brand-1)" strokeWidth="2" />
       ))}
     </svg>
   );

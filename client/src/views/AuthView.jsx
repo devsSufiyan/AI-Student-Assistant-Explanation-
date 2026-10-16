@@ -53,7 +53,12 @@ export default function AuthView({ onAuthed }) {
   return (
     <div className="auth-wrap">
       <div className="card auth-card">
-        <h2 style={{ fontSize: 18 }}>🎓 AI Study Assistant</h2>
+        <div className="auth-brand">
+          <div className="logo-lg">🎓</div>
+          <h1>AI Study Assistant</h1>
+          <p>Upload your notes. Ask. Practice. Track what you've mastered.</p>
+        </div>
+
         <div className="tabs">
           <button className={mode === 'login' ? 'active' : ''} onClick={() => setMode('login')}>Sign in</button>
           <button className={mode === 'register' ? 'active' : ''} onClick={() => setMode('register')}>Create account</button>
@@ -99,7 +104,7 @@ export default function AuthView({ onAuthed }) {
           </button>
         </form>
 
-        <p className="small muted" style={{ marginTop: 12 }}>
+        <p className="small muted" style={{ marginTop: 14, textAlign: 'center' }}>
           Demo account: <span className="mono">demo@example.com</span> / <span className="mono">password123</span>
         </p>
       </div>

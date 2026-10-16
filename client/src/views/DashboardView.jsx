@@ -10,7 +10,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { api } from '../api.js';
-import { Card, Stat, Bar, MasteryBadge, Sparkline } from '../components/ui.jsx';
+import { Card, Stat, Bar, MasteryBadge, Sparkline, EmptyState } from '../components/ui.jsx';
 
 const pct = (x) => `${Math.round((x ?? 0) * 100)}%`;
 
@@ -49,7 +49,18 @@ export default function DashboardView({ subject }) {
   }, [subject]);
 
   if (error) return <div className="error">{error}</div>;
-  if (!data) return <div className="muted">Loading analytics…</div>;
+  if (!data) {
+    return (
+      <>
+        <div className="grid cols-4" style={{ marginBottom: 16 }}>
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="skeleton" style={{ height: 92 }} />
+          ))}
+        </div>
+        <div className="skeleton" style={{ height: 220 }} />
+      </>
+    );
+  }
 
   const { overview } = data;
   const o = overview.overview;
@@ -88,7 +99,7 @@ export default function DashboardView({ subject }) {
 
       <Card title="Topic mastery & forgetting risk">
         {data.topics.length === 0 ? (
-          <p className="muted">No topics yet. Create a subject and add topics under Materials.</p>
+          <EmptyState icon="📚" title="No topics yet" hint="Add topics under Materials to start tracking mastery." />
         ) : (
           <table>
             <thead>
@@ -132,7 +143,7 @@ export default function DashboardView({ subject }) {
 
       <Card title="Why these topics, right now">
         {data.recs.length === 0
-          ? <p className="muted">No recommendations yet.</p>
+          ? <EmptyState icon="✨" title="No recommendations yet" hint="Take a quiz and the engine will suggest what to study next." />
           : data.recs.map((r) => (
               <div key={r.id} style={{ marginBottom: 14 }}>
                 <div className="row">

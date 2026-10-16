@@ -10,6 +10,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { api, getToken, setToken } from './api.js';
+import { ToastProvider } from './components/Toast.jsx';
 import AuthView from './views/AuthView.jsx';
 import DashboardView from './views/DashboardView.jsx';
 import ChatView from './views/ChatView.jsx';
@@ -18,14 +19,14 @@ import MaterialsView from './views/MaterialsView.jsx';
 import PlanView from './views/PlanView.jsx';
 
 const VIEWS = [
-  { key: 'dashboard', label: '📊 Dashboard' },
-  { key: 'plan', label: "🗓 Today's Plan" },
-  { key: 'chat', label: '💬 Ask Questions' },
-  { key: 'quiz', label: '🧠 Practice Quiz' },
-  { key: 'materials', label: '📁 Materials' },
+  { key: 'dashboard', icon: '📊', label: 'Dashboard' },
+  { key: 'plan', icon: '🗓️', label: "Today's Plan" },
+  { key: 'chat', icon: '💬', label: 'Ask Questions' },
+  { key: 'quiz', icon: '🧠', label: 'Practice Quiz' },
+  { key: 'materials', icon: '📁', label: 'Materials' },
 ];
 
-export default function App() {
+function Shell() {
   const [user, setUser] = useState(null);
   const [booting, setBooting] = useState(true);
   const [view, setView] = useState('dashboard');
@@ -97,35 +98,56 @@ export default function App() {
     }
   };
 
-  if (booting) return <div className="auth-wrap"><span className="muted">Loading…</span></div>;
+  if (booting) {
+    return (
+      <div className="auth-wrap">
+        <div style={{ width: 260 }}>
+          <div className="skeleton" style={{ height: 20, marginBottom: 10 }} />
+          <div className="skeleton" style={{ height: 20, width: '70%' }} />
+        </div>
+      </div>
+    );
+  }
   if (!user) return <AuthView onAuthed={handleAuthed} />;
+
+  const activeView = VIEWS.find((v) => v.key === view);
+  // Views that operate on a subject's material cannot work without one.
+  const needsSubject = ['chat', 'quiz', 'materials'].includes(view);
 
   return (
     <div className="app">
       <aside className="sidebar">
-        <div className="brand">🎓 Study Assistant</div>
+        <div className="brand">
+          <div className="logo">🎓</div>
+          <span className="brand-text">Study Assistant</span>
+        </div>
         {VIEWS.map((v) => (
           <button
             key={v.key}
             className={`nav-item ${view === v.key ? 'active' : ''}`}
             onClick={() => setView(v.key)}
           >
+            <span className="nav-ico">{v.icon}</span>
             {v.label}
           </button>
         ))}
         <div className="spacer" />
-        <button className="nav-item" onClick={logout}>↩ Sign out</button>
+        <button className="nav-item" onClick={logout}>
+          <span className="nav-ico">↩</span>
+          Sign out
+        </button>
       </aside>
 
       <div className="main">
         <header className="topbar">
-          <h1>{VIEWS.find((v) => v.key === view)?.label}</h1>
+          <h1>{activeView?.icon} {activeView?.label}</h1>
           <div className="spacer" />
           {subjects.length > 0 && (
             <select
               value={activeSubjectId ?? ''}
               onChange={(e) => setActiveSubjectId(e.target.value)}
-              style={{ width: 220 }}
+              style={{ width: 210 }}
+              aria-label="Select subject"
             >
               {subjects.map((s) => (
                 <option key={s.id} value={s.id}>{s.name}</option>
@@ -139,9 +161,10 @@ export default function App() {
                 placeholder="Subject name"
                 value={newSubject}
                 onChange={(e) => setNewSubject(e.target.value)}
-                style={{ width: 180 }}
+                style={{ width: 170 }}
               />
               <button className="primary" type="submit">Add</button>
+              <button type="button" className="ghost" onClick={() => setShowNewSubject(false)}>✕</button>
             </form>
           ) : (
             <button onClick={() => setShowNewSubject(true)}>+ Subject</button>
@@ -151,11 +174,18 @@ export default function App() {
         <main className="content">
           {error && <div className="error" onClick={() => setError('')}>{error}</div>}
 
-          {/* A subject is required for material/quiz/chat, so we gate those views. */}
-          {!activeSubject && view !== 'dashboard' && view !== 'plan' ? (
+          {needsSubject && !activeSubject ? (
             <div className="card">
-              <h2>Create a subject first</h2>
-              <p className="muted">Upload material under a subject, then ask questions and take quizzes against it.</p>
+              <div className="empty">
+                <div className="empty-ico">📚</div>
+                <div className="empty-title">Create a subject to get started</div>
+                <div className="small" style={{ marginTop: 4 }}>
+                  Upload your notes under a subject, then ask questions and take quizzes against them.
+                </div>
+                <button className="primary" style={{ marginTop: 14 }} onClick={() => setShowNewSubject(true)}>
+                  + New subject
+                </button>
+              </div>
             </div>
           ) : (
             <>
@@ -171,5 +201,14 @@ export default function App() {
         </main>
       </div>
     </div>
+  );
+}
+
+export default function App() {
+  // ToastProvider wraps the shell so any view can raise a notification.
+  return (
+    <ToastProvider>
+      <Shell />
+    </ToastProvider>
   );
 }

@@ -26,9 +26,11 @@ router.use(requireAuth);
 
 // In-memory upload: files are small study notes, and we immediately persist them
 // to disk ourselves, so we never need multer's temp-file machinery.
+// Any document type is accepted - parsing decides what is usable and returns a
+// clear error for formats without a text layer (images, scanned PDFs).
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB ceiling
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB ceiling
 });
 
 router.get(
@@ -74,14 +76,19 @@ router.post(
     // 2. Extract, chunk, embed, and store. Errors are caught locally so we can
     //    mark the material failed AND still return a useful message.
     try {
-      const text = await extractText({
+      // extractText returns { text, format } - format is echoed back so the UI
+      // can confirm what was detected (useful when a file has a generic name).
+      const { text, format } = await extractText({
         buffer: req.file.buffer,
         mimetype: req.file.mimetype,
         filename: req.file.originalname,
       });
 
       if (!text || text.trim().length < 20) {
-        throw new Error('No readable text was found in the file.');
+        throw new Error(
+          'No readable text was found in the file. If it is a scanned PDF or an image, ' +
+            'it has no extractable text layer - paste the content as text instead.',
+        );
       }
 
       const chunkCount = await ingestMaterial({
@@ -92,7 +99,7 @@ router.post(
       });
 
       const material = get(`SELECT * FROM materials WHERE id = ?`, materialId);
-      return res.status(201).json({ material, chunkCount });
+      return res.status(201).json({ material, chunkCount, format, chars: text.length });
     } catch (err) {
       run(`UPDATE materials SET status = 'failed', error = ? WHERE id = ?`, err.message, materialId);
       return res.status(422).json({ error: err.message, materialId });

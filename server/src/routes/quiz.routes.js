@@ -20,6 +20,7 @@ import {
   submitAnswer,
   finishAttempt,
   getAttempt,
+  reviewAttempt,
 } from '../modules/quiz/service.js';
 
 const router = Router();
@@ -119,6 +120,22 @@ router.get(
   '/attempts/:id',
   asyncHandler((req, res) => {
     res.json({ attempt: getAttempt(req.params.id, req.user.id) });
+  }),
+);
+
+/**
+ * Full post-quiz review: each question with the student's answer, the correct
+ * answer, an explanation, and the source excerpt it came from.
+ * Only available AFTER finishing, so it can never leak answers mid-quiz.
+ */
+router.get(
+  '/attempts/:id/review',
+  asyncHandler((req, res) => {
+    const attempt = getAttempt(req.params.id, req.user.id);
+    if (!attempt.finished_at) {
+      return res.status(409).json({ error: 'Finish the quiz before reviewing it.' });
+    }
+    return res.json(reviewAttempt({ attemptId: req.params.id, userId: req.user.id }));
   }),
 );
 
