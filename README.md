@@ -1,5 +1,7 @@
 # AI-Based Student Study Assistant
 
+![CI](https://github.com/devsSufiyan/AI-Student-Assistant-Explanation-/actions/workflows/ci.yml/badge.svg)
+
 A full-stack JavaScript mini project that combines **RAG**, **personalized
 learning**, **learning analytics**, and **adaptive tutoring** in one small,
 runnable app. Zero cloud keys required — it ships with offline embeddings and an
