@@ -17,7 +17,9 @@ A student uploads their own course notes, then:
 1. **Asks questions** and gets answers grounded **only** in their material, with
    citations back to the exact source chunk (RAG).
 2. **Takes quizzes** whose questions are generated from that material. The engine
-   picks the next question at the student's zone of proximal development.
+   picks the next question at the student's zone of proximal development, and the
+   results screen reviews **every question with the correct answer and the reason**
+   (the source sentence) after you finish.
 3. **Builds a mastery model** of each topic using Bayesian Knowledge Tracing
    (BKT) and Elo — updated after every single answer.
 4. **Gets a daily plan** and ranked recommendations, each with a plain-English
@@ -64,13 +66,30 @@ cd ../server && npm start       # server serves the built client at :4000
 
 ```bash
 cd server
-npm test     # 79 unit + integration tests (pure algorithms + HTTP flow + full e2e)
+npm test     # 99 unit + integration tests (pure algorithms + HTTP flow + full e2e)
 npm run eval # reproducible metrics for the report
 ```
 
 `npm run eval` prints three results: RAG retrieval **Recall@k / MRR** on a golden
 set, a **recommendation weight ablation**, and an **adaptive vs fixed** quiz
 simulation. See `docs/` and `PLAN.md` §14 for how to interpret them.
+
+---
+
+## Supported document types
+
+Uploads accept **any file**, and the extractor picks the right parser. Office
+formats work through a small built-in ZIP reader, so there is nothing extra to
+install:
+
+| Type | Formats |
+|---|---|
+| Documents | `.pdf`*, `.docx`, `.odt`, `.rtf`, `.txt`, `.md` |
+| Slides / sheets | `.pptx`, `.xlsx`, `.odp`, `.ods` |
+| Web / data / code | `.html`, `.csv`, `.tsv`, `.json`, `.xml`, `.yml`, `.log`, `.js`, `.py`, … |
+
+\* PDF needs `npm i pdf-parse`. Formats with no text layer (images, scanned PDFs)
+are rejected with a clear message rather than silently indexing binary noise.
 
 ---
 
@@ -182,6 +201,7 @@ POST /api/quiz/attempts                          { topicId, mode }
 GET  /api/quiz/attempts/:id/next
 POST /api/quiz/attempts/:id/answer               { questionId, selectedIndex, timeMs }
 POST /api/quiz/attempts/:id/finish
+GET  /api/quiz/attempts/:id/review               # only after finishing: answers + reasons
 
 GET  /api/analytics/overview | /api/analytics/topics
 GET  /api/recommendations                        POST /api/recommendations/regenerate

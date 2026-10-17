@@ -22,4 +22,12 @@ app.listen(SERVER.PORT, () => {
   console.log(`  LLM provider        : ${LLM.PROVIDER}`);
   console.log(`  Embedding provider  : ${EMBEDDING.PROVIDER}`);
   console.log('──────────────────────────────────────────────');
+
+  // The fallback secret is fine for a local demo but would let anyone forge
+  // tokens if this were ever exposed. Make that impossible to miss.
+  if (SERVER.JWT_SECRET === 'dev-only-insecure-secret-change-me') {
+    console.warn(
+      '  ⚠  Using the default JWT secret. Set JWT_SECRET in .env before deploying.',
+    );
+  }
 });

@@ -412,8 +412,24 @@ so the report can point at files rather than describe intentions:
    keeping the client dependency-free.
 5. **`.env` loaded via Node's `--env-file-if-exists`.** No `dotenv` dependency.
 
-### Test coverage (79 tests, 8 files)
+### Test coverage (99 tests, 9 files)
 
 Pure algorithms are unit-tested (`bkt`, `elo`, `recommend`, `adaptive`/`planner`,
-`rag`, `llm`). The HTTP layer is covered by an integration test (`api.test.js`)
-and a full upload-to-mastery loop (`e2e.test.js`). Run `npm test` in `server/`.
+`rag`, `llm`, `materials-parse`). The HTTP layer is covered by an integration test
+(`api.test.js`) and a full upload-to-mastery loop (`e2e.test.js`). Run `npm test`
+in `server/`.
+
+### Post-MVP additions
+
+- **Any document type.** A dependency-free ZIP reader (`modules/materials/zip.js`)
+  extracts DOCX/PPTX/XLSX/ODT text; HTML, RTF, CSV/JSON and plain text are handled
+  directly. Binary files are rejected explicitly instead of being indexed as noise.
+- **Post-quiz review.** `GET /api/quiz/attempts/:id/review` returns each question
+  with the student's choice, the correct answer, the reason (source sentence) and
+  the per-question mastery change. It is only available after finishing, so the
+  answer key never reaches the browser mid-quiz.
+- **Redesigned UI.** A token-based design system with toasts, skeletons, empty
+  states, drag-and-drop upload, a results screen with a score ring, and a
+  responsive layout.
+- **Boot robustness.** `busy_timeout` plus non-fatal WAL so a transiently locked
+  database no longer crashes the server on start.

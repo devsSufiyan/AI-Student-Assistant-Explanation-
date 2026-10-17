@@ -201,4 +201,67 @@ describe('end-to-end study loop', () => {
       .send({ questionId, selectedIndex: 0 });
     expect(second.status).toBe(409);
   });
+
+  it('builds a post-quiz review with the chosen answer, correct answer and reason', async () => {
+    const started = await request(app)
+      .post('/api/quiz/attempts')
+      .set(auth())
+      .send({ topicId, mode: 'adaptive' });
+    const attemptId = started.body.attempt.id;
+
+    const next = await request(app).get(`/api/quiz/attempts/${attemptId}/next`).set(auth());
+    const questionId = next.body.question.id;
+
+    const keys = new Map(
+      all(`SELECT id, correct_index FROM questions WHERE topic_id = ?`, topicId).map((r) => [
+        r.id,
+        r.correct_index,
+      ]),
+    );
+    const correct = keys.get(questionId);
+
+    await request(app)
+      .post(`/api/quiz/attempts/${attemptId}/answer`)
+      .set(auth())
+      .send({ questionId, selectedIndex: correct });
+
+    // Review must NOT be available before finishing, or it would leak the key.
+    const early = await request(app).get(`/api/quiz/attempts/${attemptId}/review`).set(auth());
+    expect(early.status).toBe(409);
+
+    await request(app).post(`/api/quiz/attempts/${attemptId}/finish`).set(auth());
+
+    const review = await request(app).get(`/api/quiz/attempts/${attemptId}/review`).set(auth());
+    expect(review.status).toBe(200);
+    expect(review.body.questions).toHaveLength(1);
+
+    const item = review.body.questions[0];
+    expect(item.correctIndex).toBe(correct);
+    expect(item.selectedIndex).toBe(correct);
+    expect(item.isCorrect).toBe(true);
+    // The reason is either the provider's explanation or null; never undefined.
+    expect(item.explanation === null || typeof item.explanation === 'string').toBe(true);
+    expect(review.body.summary.correct).toBe(1);
+    expect(review.body.summary.total).toBe(1);
+  });
+
+  it('scopes the review to its owner', async () => {
+    // A second account must not be able to read the first account's review.
+    const other = `e2e-other-${Date.now()}@example.com`;
+    const reg = await request(app)
+      .post('/api/auth/register')
+      .send({ name: 'Other', email: other, password });
+    const otherToken = reg.body.token;
+
+    const started = await request(app)
+      .post('/api/quiz/attempts')
+      .set(auth())
+      .send({ topicId, mode: 'fixed' });
+    const attemptId = started.body.attempt.id;
+
+    const res = await request(app)
+      .get(`/api/quiz/attempts/${attemptId}/review`)
+      .set({ Authorization: `Bearer ${otherToken}` });
+    expect(res.status).toBe(403);
+  });
 });
