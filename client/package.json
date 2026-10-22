@@ -3,17 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "description": "AI-Based Student Study Assistant - static SPA (Sneat Bootstrap 5 template + vanilla JavaScript)",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
-  },
-  "devDependencies": {
-    "@vitejs/plugin-react": "^4.3.4",
-    "vite": "^5.4.11"
+    "check": "node scripts/check.mjs",
+    "start": "node -e \"console.log('The client has no build step. Run the server instead: cd ../server && npm run dev')\""
   }
 }

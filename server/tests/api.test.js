@@ -66,6 +66,47 @@ describe('auth', () => {
     const res = await request(app).get('/api/subjects');
     expect(res.status).toBe(401);
   });
+
+  it('updates the editable profile fields', async () => {
+    const res = await request(app)
+      .patch('/api/auth/me')
+      .set({ Authorization: `Bearer ${token}` })
+      .send({ name: 'Updated Student', goal: 'Pass the final', examDate: '2030-06-15', dailyMinutes: 60 });
+    expect(res.status).toBe(200);
+    expect(res.body.user.name).toBe('Updated Student');
+    expect(res.body.user.goal).toBe('Pass the final');
+    expect(res.body.user.exam_date).toBe('2030-06-15');
+    expect(res.body.user.daily_minutes).toBe(60);
+    // Email is read-only, and the hash must never be returned.
+    expect(res.body.user.email).toBe(email);
+    expect(res.body.user.password_hash).toBeUndefined();
+  });
+
+  it('clears optional profile fields with null', async () => {
+    const res = await request(app)
+      .patch('/api/auth/me')
+      .set({ Authorization: `Bearer ${token}` })
+      .send({ goal: null, examDate: null });
+    expect(res.status).toBe(200);
+    expect(res.body.user.goal).toBeNull();
+    expect(res.body.user.exam_date).toBeNull();
+  });
+
+  it('refuses to write email or password through the profile endpoint', async () => {
+    const res = await request(app)
+      .patch('/api/auth/me')
+      .set({ Authorization: `Bearer ${token}` })
+      .send({ email: 'attacker@example.com' });
+    expect(res.status).toBe(400); // strict schema rejects unknown keys
+  });
+
+  it('validates the daily minute budget', async () => {
+    const res = await request(app)
+      .patch('/api/auth/me')
+      .set({ Authorization: `Bearer ${token}` })
+      .send({ dailyMinutes: 100000 });
+    expect(res.status).toBe(400);
+  });
 });
 
 describe('subjects and topics', () => {

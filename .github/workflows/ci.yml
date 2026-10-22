@@ -2,10 +2,14 @@
 # Continuous integration.
 #
 # Runs on every push to main and on every pull request. Two independent jobs so
-# a client build failure does not hide a server test failure (and vice versa).
+# a client check failure does not hide a server test failure (and vice versa).
 #
 # Node 22 is required because the server uses the built-in `node:sqlite`.
 # Tests use throwaway temp databases, so no services or secrets are needed.
+#
+# The client is a framework-free static SPA (no npm dependencies, no build
+# step), so the client job only has to prove the files are syntactically valid
+# and that the required entry points exist.
 # ---------------------------------------------------------------------------
 name: CI
 
@@ -47,7 +51,7 @@ jobs:
         run: npm run eval
 
   client:
-    name: Client (production build)
+    name: Client (syntax + entry points)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -59,11 +63,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
-          cache-dependency-path: client/package-lock.json
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build
-        run: npm run build
+      # The client has no npm dependencies, so there is nothing to install.
+      # `npm run check` parses every module without executing it and verifies
+      # the required entry points exist - exactly the guarantee a build step
+      # used to provide.
+      - name: Check the client parses and has all entry points
+        run: npm run check

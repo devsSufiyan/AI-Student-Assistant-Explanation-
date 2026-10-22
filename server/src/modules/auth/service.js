@@ -80,3 +80,47 @@ export function verifyToken(token) {
 export function getUserById(id) {
   return publicUser(get(`SELECT * FROM users WHERE id = ?`, id));
 }
+
+/**
+ * Update the parts of a profile the student is allowed to change.
+ *
+ * `email` and `password_hash` are intentionally NOT editable here: changing an
+ * email needs a verification flow, and changing a password needs the current
+ * password. Both are future work, so the API can never be tricked into writing
+ * either column through this endpoint.
+ *
+ * Only the keys present in `patch` are written, which is why the UPDATE is built
+ * dynamically instead of using COALESCE - otherwise sending `goal: null` (to
+ * clear it) would be indistinguishable from omitting the field.
+ *
+ * @param {string} userId
+ * @param {{name?:string, goal?:string|null, examDate?:string|null, dailyMinutes?:number}} patch
+ * @returns {object|null} the updated public user
+ */
+export function updateUserProfile(userId, patch) {
+  const columns = [];
+  const values = [];
+
+  if (patch.name !== undefined) {
+    columns.push('name = ?');
+    values.push(String(patch.name).trim());
+  }
+  if (patch.goal !== undefined) {
+    columns.push('goal = ?');
+    values.push(patch.goal === null ? null : String(patch.goal).trim() || null);
+  }
+  if (patch.examDate !== undefined) {
+    columns.push('exam_date = ?');
+    values.push(patch.examDate === null || patch.examDate === '' ? null : patch.examDate);
+  }
+  if (patch.dailyMinutes !== undefined) {
+    columns.push('daily_minutes = ?');
+    values.push(patch.dailyMinutes);
+  }
+
+  if (columns.length > 0) {
+    run(`UPDATE users SET ${columns.join(', ')} WHERE id = ?`, ...values, userId);
+  }
+
+  return getUserById(userId);
+}

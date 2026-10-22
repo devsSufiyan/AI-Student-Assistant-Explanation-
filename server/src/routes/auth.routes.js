@@ -11,6 +11,7 @@ import {
   registerUser,
   authenticateUser,
   signToken,
+  updateUserProfile,
 } from '../modules/auth/service.js';
 
 const router = Router();
@@ -49,6 +50,37 @@ router.get(
   requireAuth,
   asyncHandler((req, res) => {
     res.json({ user: req.user });
+  }),
+);
+
+/**
+ * Update the student's profile settings.
+ *
+ * Everything here feeds another subsystem: `examDate` drives recommendation
+ * urgency, `dailyMinutes` drives the planner's minute budget, and `goal` is
+ * surfaced in the dashboard. Keeping them editable is what makes the system
+ * feel personalised rather than hard-coded at registration.
+ */
+router.patch(
+  '/me',
+  requireAuth,
+  asyncHandler((req, res) => {
+    const body = z
+      .object({
+        name: z.string().min(1).max(80).optional(),
+        goal: z.string().max(200).nullable().optional(),
+        // Accept an ISO date (YYYY-MM-DD) or null to clear it.
+        examDate: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/, 'examDate must be YYYY-MM-DD')
+          .nullable()
+          .optional(),
+        dailyMinutes: z.number().int().min(5).max(600).optional(),
+      })
+      .strict()
+      .parse(req.body);
+
+    res.json({ user: updateUserProfile(req.user.id, body) });
   }),
 );
 

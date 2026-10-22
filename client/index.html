@@ -1,13 +1,63 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="layout-menu-fixed layout-compact" data-assets-path="assets/" data-template="vertical-menu-template-free">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI Study Assistant</title>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
+
+    <title>Study Assistant · Sneat Dashboard</title>
+    <meta
+      name="description"
+      content="AI-Based Student Study Assistant - RAG answers, adaptive quizzes, mastery tracking and a personalised study plan." />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="assets/img/favicon/favicon.ico" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap"
+      rel="stylesheet" />
+
+    <link rel="stylesheet" href="assets/vendor/fonts/iconify-icons.css" />
+
+    <!-- Core CSS (Sneat) -->
+    <link rel="stylesheet" href="assets/vendor/css/core.css" />
+    <link rel="stylesheet" href="assets/css/demo.css" />
+    <link rel="stylesheet" href="assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css" />
+    <link rel="stylesheet" href="assets/vendor/libs/apex-charts/apex-charts.css" />
+    <link rel="stylesheet" href="assets/vendor/css/pages/page-auth.css" />
+
+    <!-- App CSS (small additions on top of Sneat, no framework) -->
+    <link rel="stylesheet" href="css/app.css" />
+
+    <!-- Helpers + theme config MUST load before any other template script -->
+    <script src="assets/vendor/js/helpers.js"></script>
+    <script src="assets/js/config.js"></script>
   </head>
+
   <body>
-    <!-- React mounts into this single root; everything else is rendered in JS. -->
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <!-- The whole application is rendered by vanilla JS into this element. -->
+    <div id="app">
+      <div class="app-boot">
+        <div class="spinner-border text-primary" role="status" aria-label="Loading"></div>
+        <p class="text-body-secondary mt-3 mb-0">Loading your study dashboard…</p>
+      </div>
+    </div>
+
+    <!-- Bootstrap toasts are appended here by js/ui.js -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toast-root"></div>
+
+    <!-- Core JS -->
+    <script src="assets/vendor/libs/popper/popper.js"></script>
+    <script src="assets/vendor/js/bootstrap.js"></script>
+    <script src="assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js"></script>
+    <script src="assets/vendor/js/menu.js"></script>
+    <script src="assets/vendor/libs/apex-charts/apexcharts.js"></script>
+
+    <!-- Application (ES modules, pure JavaScript) -->
+    <script type="module" src="js/app.js"></script>
   </body>
 </html>

@@ -33,33 +33,31 @@ A student uploads their own course notes, then:
 
 ## Quick start
 
-Two terminals. Node **22.5+** is required (for the built-in `node:sqlite`).
+**One process.** The client is a framework-free static SPA (plain HTML/CSS/JS
+with the Sneat Bootstrap 5 template), so Express serves both the API and the
+UI. Node **22.5+** is required (for the built-in `node:sqlite`).
 
 ```bash
-# --- Terminal 1: API ---
 cd server
 npm install
 cp .env.example .env    # optional: tweak providers/ports
 npm run seed            # creates the demo account + sample data
 npm run dev             # http://localhost:4000
-
-# --- Terminal 2: client ---
-cd client
-npm install
-npm run dev             # http://localhost:5173
 ```
 
-Open <http://localhost:5173> and sign in with:
+Open <http://localhost:4000> and sign in with:
 
 ```
 demo@example.com / password123
 ```
 
-For a single-process production run:
+There is **no client build step and no second terminal** — open the URL above
+and the app is running. The whole client is ~4,400 lines of plain JavaScript.
+
+For a production run:
 
 ```bash
-cd client && npm run build      # outputs client/dist
-cd ../server && npm start       # server serves the built client at :4000
+cd server && npm start     # same server, NODE_ENV=production
 ```
 
 ---
@@ -98,9 +96,14 @@ are rejected with a clear message rather than silently indexing binary noise.
 ## Architecture
 
 ```
-client/                     React + Vite SPA
-  src/api.js                the single place the browser talks to the server
-  src/views/                one file per product feature
+client/                     framework-free SPA (Sneat Bootstrap 5 template)
+  index.html                the only HTML file; the app renders into #app
+  assets/                   vendored Sneat template (MIT) - css, js, fonts
+  css/app.css               app-specific styles on top of Sneat
+  js/api.js                 the single place the browser talks to the server
+  js/ui.js                  escaping, toasts, cards, badges, chart helpers
+  js/app.js                 app shell: auth state, layout, hash routing
+  js/views/                 one file per product feature
 server/
   src/config/constants.js   EVERY tunable number, documented ("TUNE HERE")
   src/db/                   node:sqlite setup, schema.sql, seed
@@ -191,6 +194,7 @@ All routes except `/api/auth/*` and `/api/health` require `Authorization: Bearer
 
 ```
 POST /api/auth/register | /api/auth/login        GET /api/auth/me
+PATCH /api/auth/me                               # name, goal, examDate, dailyMinutes
 
 GET  /api/subjects                               POST /api/subjects
 GET  /api/subjects/:id/topics                     POST /api/subjects/:id/topics

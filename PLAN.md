@@ -52,13 +52,13 @@ Explicitly **out of scope for MVP** (write these down so scope doesn't creep):
 |---|---|---|
 | Runtime | Node.js (LTS) | one language across stack |
 | API | Express | boring, well-known, easy to defend in a viva |
-| ORM / DB | Prisma + SQLite | zero infra, migrations, easy to seed/demo |
+| ORM / DB | `node:sqlite` (built-in) + raw SQL | zero infra, no native build step, easy to seed/demo |
 | Vector store | `vectra` (local) or embeddings in SQLite + cosine in JS | no external service needed for a mini project |
 | Embeddings | `@xenova/transformers` (`all-MiniLM-L6-v2`) | runs locally, free, no API key |
 | LLM | provider adapter (Ollama local **or** OpenAI/Groq) | one interface, swap providers with a config flag |
 | PDF parsing | `pdf-parse` | simple text extraction |
 | Auth | JWT + bcrypt | minimal but realistic |
-| Frontend | React + Vite + Recharts | fast to build, good charts for analytics |
+| Frontend | Sneat Bootstrap 5 template + vanilla JS | no build step, one process serves API + UI, pure JS end to end |
 | Tests | Vitest | tests the pure algorithm functions |
 
 **Why SQLite + local embeddings:** a mini project must run on the examiner's
@@ -264,7 +264,10 @@ study-assistant/
 │  │  ├─ middleware/                 # auth, errors, validation
 │  │  └─ index.js
 │  └─ tests/                         # unit tests for pure algorithms
-├─ client/                           # React + Vite (chat, quiz, dashboard, plan)
+├─ client/                           # static SPA: Sneat template + vanilla JS
+│  ├─ assets/                        # vendored Sneat template (MIT)
+│  ├─ css/app.css                    # app styles on top of Sneat
+│  └─ js/                            # api.js, ui.js, app.js, views/
 └─ docs/                             # this plan, model card, eval results
 ```
 
@@ -308,7 +311,7 @@ Example of the intended density:
 
 | # | Milestone | Deliverable | Done when |
 |---|---|---|---|
-| 0 | Skeleton | Express + Prisma + Vite running, schema migrated, seed data | server and client talk to each other |
+| 0 | Skeleton | Express + `node:sqlite` + static client running, schema created, seed data | server and client talk to each other |
 | 1 | Auth + subjects | register/login, create subject | token-protected route works |
 | 2 | Ingest + RAG core | upload → chunk → embed → retrieve | `/rag/query` returns cited answer |
 | 3 | Quiz | generate MCQs from chunks, take & score attempt | score persisted to `Answer` |

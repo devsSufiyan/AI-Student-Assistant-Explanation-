@@ -41,19 +41,23 @@ export function createApp() {
   app.use('/api/quiz', quizRoutes);
   app.use('/api', analyticsRoutes);
 
-  // Optionally serve a built client (npm run build in ../client). During
-  // development the Vite dev server proxies /api here instead.
-  const clientDist = path.resolve(
+  // Serve the client. The client is a plain HTML/CSS/JS SPA (no build step), so
+  // Express serves it directly from ../client. A historical `client/dist` build
+  // is still honoured if present, which keeps the old workflow working.
+  const clientRoot = path.resolve(
     path.dirname(fileURLToPath(import.meta.url)),
     '..',
     '..',
     'client',
-    'dist',
   );
-  if (fs.existsSync(clientDist)) {
-    app.use(express.static(clientDist));
-    // SPA fallback: any non-API GET returns index.html so client routing works.
-    app.get(/^\/(?!api).*/, (req, res) => res.sendFile(path.join(clientDist, 'index.html')));
+  const clientDist = path.join(clientRoot, 'dist');
+  const staticRoot = fs.existsSync(path.join(clientDist, 'index.html')) ? clientDist : clientRoot;
+
+  if (fs.existsSync(path.join(staticRoot, 'index.html'))) {
+    app.use(express.static(staticRoot));
+    // SPA fallback: any non-API GET returns index.html. The client routes with
+    // the URL hash, so this is mostly a safety net for deep links.
+    app.get(/^\/(?!api).*/, (req, res) => res.sendFile(path.join(staticRoot, 'index.html')));
   }
 
   app.use(notFound);
